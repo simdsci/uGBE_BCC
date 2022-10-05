@@ -32,9 +32,9 @@
 %%
 function en = uGBE(fnData, GBE_coh_twin, type)
 % fnData is input data file that contain 18 columns of the orientations 
-    % in the two grains (P and Q)
-% GBE_twin
-% type of alkali or transition-BCC metals ('transition', 'alkali')
+    % in the two grains (P and Q).
+% GBE_twin is coherent twin energy in unit of J/m2.
+% type of alkali or transition-BCC metals ('transition', 'alkali').
 
 % The grain boundary energy function that approximate the energy from 5D
 % space bounaries in BCC Fe metal.  
@@ -62,8 +62,7 @@ function en = uGBE(fnData, GBE_coh_twin, type)
     % 
     % coherent twin energy = 0.262260282 J/m2, and type = 'transition'
     % This particular excel file pass into UGBE(). Function returns
-    %% 0.2914 %% as a energy value of this coherent twin boundary in unit of
-    % J/m2.
+    %% 0.2204 %% as a energy value of this coherent twin boundary in unit of J/m2.
     %%
     labFrame = readmatrix(fnData);
     [m,~]=size(labFrame);
