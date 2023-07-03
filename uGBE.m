@@ -1,11 +1,11 @@
 %%
-% Copyright (c) 2018, King Mongkut's University of Technology Thonburi,
-% KMUTT. Producted at KMUTT. Written by Ooraphan Chirayutthanasak,
+% Copyright (c) 2023, King Mongkut's University of Technology Thonburi, KMUTT. 
+% Producted at KMUTT. Written by Ooraphan Chirayutthanasak,
 % ooraphan.chira@kmutt.ac.th.
-% All rights reserved. This file is port of uGBE. For details, see
-% Supplementary data section of the article by Ooraphan Chirayutthanasak, 
-% Taira Okita, Somsak Dangtip, Gregory S. Rohrer, Sutatch Ratanaphan,
-% and Rajchawit Sarochawikasit 
+% All rights reserved. This file is part of uGBE. For details, see
+% supplementary data section of the article by Ooraphan Chirayutthanasak, 
+% Rajchawit Sarochawikasit, Sahachat Khongpia, Taira Okita, 
+% Somsak Dangtip, Gregory S. Rohrer, and Sutatch Ratanaphan,
 % % "Universal function for grain boundary energies in bcc metals" 
 
 % uGBE program is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
 %
-% WGBE program is distributed in the hope that it will be useful,
+% uGBE program is distributed in the hope that it will be useful,
 % but WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
@@ -26,43 +26,46 @@
 % Written by Vasily Bulatov, bulatov1@llnl.gov; Bryan Reed, 
 % reed12@llnl.gov. CODE-LLNL-CODE-646028. 
 % All rights reserved. This file is part of GB5DOF. For details, 
-% see Supplementary data section of the original article by V. V. Bulatov, 
+% see the Supplementary data section of the original article by V. V. Bulatov, 
 % B. W. Reed and M. Kumar "Grain Boundary Energy Function for FCC Metals".
 
 %%
-function en = uGBE(fnData, GBE_coh_twin, type)
-% fnData is input data file that contain 18 columns of the orientations 
+function approx_en = uGBE(fnData, GBE_coh_twin, type)
+% fnData is an input data file that contains 18 columns of the orientations 
     % in the two grains (P and Q).
-% GBE_twin is coherent twin energy in unit of J/m2.
+% GBE_twin is coherent twin energy in the unit of J/m2.
 % type of alkali or transition-BCC metals ('transition', 'alkali').
 
-% The grain boundary energy function that approximate the energy from 5D
-% space bounaries in BCC Fe metal.  
+% The grain boundary energy function that approximates the energy from 5D
+% space boundaries in BCC metals. There are 4 sections in this code. 
 %
-% There are 4 sections in this code. First section, main section contains 
-% the code of full energy approximation that based on the study of Bulatov.
-% Second section, there are the functions for calculate energy in 1D, 2D,
+% First section, the main section contains the code of full energy approximation 
+% that is based on the study of Bulatov.
+% 
+% Second section, there are the functions for calculating energy in 1D, 2D,
 % and 3D spaces for <100>, <110>, and <111> sets. 
+% 
 % Third section contains the code for calculating rsw 
-% and rsw piecewise functions that based on the study of Dette. 
+% and rsw piecewise functions based on the study of Dette. 
+% 
 % The last section is the function of scaffolding calculation 
-% that duplicate from the study of Bulatov. 
+% obtained from the BRK function
 % V. V. Bulatov, B. W. Reed, M. Kumar, Acta Mater. 65 (2014) 161-175.
 % H. Dette, J. Goesmann, C. Greiff, R. Janisch, Acta Mater. 125 (2017) 145-153
 
-    % The only one input of this function is the excel file, which define 
+    % The only one input of this function is the Excel file, which defines 
     % the orientations of the two grains (P and Q) by a laboratory frame.
     % There are 18 columns for 3x3 matrix of P and Q cube frame. 
     %
-    % Example of the excel input for coherent twin boundary in Fe is as follows:
+    % Example of the Excel input for sigma 23 (310) boundary in Fe is as follows:
     %
     % |                  Matrix P                  |                  Matrix Q                  |
     % | x1 |    |    | y1 |    |    | z1 |    |    | x2 |    |    | y2 |    |    | z2 |    |    |
-    % |  4 |  2 |  2 |  1 | -1 | -1 |  0 |  2 | -2 |  4 |  2 |  2 | -1 |  1 |  1 |  0 | -2 |  2 |
+    % |  6 |  2 |  0 |  3 | -9 |  5 |  2 | -6 |-12 |  6 |  2 |  0 |	 3 | -9 | -5 | -2 |  6 |-12 |
     % 
     % coherent twin energy = 0.262260282 J/m2, and type = 'transition'
-    % This particular excel file pass into UGBE(). Function returns
-    %% 0.2204 %% as a energy value of this coherent twin boundary in unit of J/m2.
+    % This particular Excel file passes into UGBE(). Function returns
+    %% 1.2920 %% as an energy value of sigma 23 (310) boundary in unit of J/m2.
     %%
     labFrame = readmatrix(fnData);
     [m,~]=size(labFrame);
@@ -72,11 +75,11 @@ function en = uGBE(fnData, GBE_coh_twin, type)
     % 6 2D-parameters, and 5 3D-parameters.
     
 
-    params = [0.775, 0.6, 0.3875, 0.79, 0.95, 0.41, 0.78711, 0.71504, 0.8459, 0.78418, 0.81895, ...
-        0.55547, 0.79707, 1.0557, 0.96797, 0.78984, 0.91816, 0.4166, 0.84414, 0.19648, 0.89844, ...
-        0.70918, 0.86309, 0.59258, 1.9086, 2.7182, 0.49309, 0.44688, 0.475, 0.23867, 0.47617, ...
-        0.37133, 0.97564, 0.45762, 0.8252, 0.20234, 0.5334, 0.82012, 0.24023, 0.53379, 0.91406, ...
-        1.0012, 3.1816, -0.092578, -0.066992, 0.69434, -0.21406, 0.41602, 0.74668, 0.45312];
+    params = [0.775, 0.6, 0.3875, 0.79, 0.95, 0.41, 0.78711, 0.71504, 0.8459, 0.78418, ...
+        0.81895, 0.55547, 0.79707, 1.0557, 0.96797, 0.78984, 0.91816, 0.4166, 0.84414, 0.19648, ...
+        0.89844, 0.70918, 0.86309, 0.59258, 1.9086, 2.7182, 0.49309, 0.44688, 0.475, 0.23867, ...
+        0.47617, 0.37133, 0.97564, 0.45762, 0.8252, 0.20234, 0.5334, 0.82012, 0.24023, 0.53379, ...
+        0.91406, 1.0012, 3.1816, -0.092578, -0.066992, 0.69434, -0.21406, 0.41602, 0.74668, 0.45312];
     
     for i=1:m
         
@@ -91,20 +94,20 @@ function en = uGBE(fnData, GBE_coh_twin, type)
         % Calculated the grain boundary energy for all P,Q frames, the 5D
         % space boundaries are approximated by the summation of weight
         % normalized grain boundary energy of possible scaffolding in 3 sets.
-        en(i) = weightallset(geom100, geom110, geom111, params);
+        en(i) = weight_all_set(geom100, geom110, geom111, params);
  
     end
     
-% find Ergb that is nearly the highest energy at sigma 23 {310} boundary 
-% Ergb is estimated by coherent twin energy
+% find Emax that is nearly the highest energy at sigma 23 {310} boundary 
+% Emax is estimated by coherent twin energy
     if type == "transition"
-        ergb = (4.519*GBE_coh_twin) + 0.2232;
+        Emax = (4.519*GBE_coh_twin) + 0.2232;
     elseif type == "alkali"
-        ergb = (5.8306*GBE_coh_twin) + 0.0092;
+        Emax = (5.8306*GBE_coh_twin) + 0.0092;
     end
 
 % normalized grain boundary energy is 
-       approx_en = approx_from_rgb(en, GBE_coh_twin, ergb);
+       approx_en = approx_from_max(en, GBE_coh_twin, Emax);
        
 %     % The input file needs the column 19, which is the simulation energy
 %     % list. If the 19th column is not available, the graph will not present. 
@@ -113,23 +116,22 @@ function en = uGBE(fnData, GBE_coh_twin, type)
 %     end
 %     
     fnFitEn = 'AppoxEn.csv'; %',fnData,'
-    csvwrite(fnFitEn, approx_en');
+%     csvwrite(fnFitEn, approx_en');
 
 end
-%%
-function approx_en = approx_from_rgb(en, coh_twin, ergb)
+
+%% section 1 %%
+% full energy approximation that based on the study of Bulatov
+
+function approx_en = approx_from_max(en, coh_twin, Emax)
 a = 0.2;
 b= 1;
-    approx_en(en>=0.2) = ((en(en>=0.2)-a)*(ergb - coh_twin)/(b-a)) + coh_twin;
+    approx_en(en>=0.2) = ((en(en>=0.2)-a)*(Emax - coh_twin)/(b-a)) + coh_twin;
     approx_en(en<0.2) = en(en<0.2)*coh_twin/a;
 end
 
-function en = weightallset(geom100, geom110, geom111, params)
+function en = weight_all_set(geom100, geom110, geom111, params)
 %
-
-    %eRGB = params(1); % The only dimensioned parameter.  The energy scale, set by the energy of a random boundary.
-                        % However, this parameter are significate use in the
-                        % universal function for BCC metels in future work.
     d0100 = params(1); % Maximum distance for the 100 set.  Also the distance scale for the rsw weighting function.
     d0110 = params(2); % Same for the 110 set
     d0111 = params(3); % Same for the 111 set
@@ -137,7 +139,7 @@ function en = weightallset(geom100, geom110, geom111, params)
     weight110 = params(5); % Same for 110
     weight111 = params(6); % Same for 111
 
-    % The following three energy lists are in units of eRGB. 
+    % The following three energy lists are in range of 0-1. 
     ksiData = geom100(2,:);
     etaData = geom100(3,:);
     phiData = geom100(4,:);
@@ -181,9 +183,8 @@ function en = weightallset(geom100, geom110, geom111, params)
     
 end
 
-%
-% calculate boudnary energy for <100> set
-%
+%% section 2 %%
+% calculate boundary energy for <100> set
 
 function en = enMix100(ksi, eta, phi, params)
 %
@@ -238,9 +239,8 @@ function en = stgb100(ksi, params)
     k=6;
     vtheta=[0 params(12) 36.85*pi/180 params(13) 53*pi/180 params(14) pi/2];
     gamma=[0 params(7) params(8) params(9) params(10) params(11) 0];
-%36.8 
     
-    a = 0.5;
+    a = 0.5; % 100 STGB shape factor
     
     en = Ftwgb_stgb(ksi, vtheta, gamma, k, a);
 
@@ -257,7 +257,7 @@ function en = twist100(ksi, params)
     vtheta = [0 params(18) 36.8*pi/180 pi/4];
     gamma = [0 params(15) params(16) params(17)];
     
-    a = 0.5; 
+    a = 0.5; % 100 twist GB shape factor
     
     en = Ftwgb_stgb(ksi, vtheta, gamma, k, a);
     
@@ -331,7 +331,7 @@ function en = stgb110(ksi, params)
     vtheta = [0 params(24) 70.65*pi/180 params(25) 129.5*pi/180 params(26) pi];
     gamma = [0 params(19) params(20) params(21) params(22) params(23) 0];
     
-    a = 0.7;
+    a = 0.7; % 110 STGB shape factor
     
     en = Ftwgb_stgb(ksi, vtheta, gamma, k, a);
 
@@ -347,7 +347,7 @@ function en = twist110(ksi, params)
     vtheta=[0 params(32) 50.5*pi/180 params(33) 70.5*pi/180 pi/2];
     gamma=[0 params(27) params(28) params(29) params(30) params(31)];    
 
-    a = params(34);
+    a = params(34); % 110 twist GB shape factor
     
     en = Ftwgb_stgb(ksi, vtheta, gamma, k, a);
 
@@ -407,7 +407,7 @@ function en = stgb111(ksi, params)
     vtheta=[0 params(37) pi/3];
     gamma=[0 params(35) params(36)];
     
-    a = 0.5;
+    a = 0.5; % 111 STGB shape factor
     
     en = Ftwgb_stgb(ksi, vtheta, gamma, k, a);
 
@@ -423,7 +423,7 @@ function en = stgb111_eta60(ksi, params)
     vtheta=[0 params(40) pi/3];
     gamma=[0 params(38) params(39)];
     
-    a = 0.5;
+    a = 0.5; % 111 STGB (eta = 60 degree) shape factor
     
     en = Ftwgb_stgb(ksi, vtheta, gamma, k, a);
 
@@ -439,16 +439,14 @@ function en = twist111(ksi, params)
     vtheta = [0 pi/3];
     gamma = [0 params(41)];
     
-    a = params(42); %111 twist shape factor
+    a = params(42); %111 twist GB shape factor
     
     en = Ftwgb_stgb(ksi, vtheta, gamma, k, a);
 
 end
 
 %
-%
 % support function
-%
 %
 
 function [P,Q]=convert2PQ(data)
@@ -478,22 +476,6 @@ function printGraph(zFit, z)
     
 end
 
-% function params = readParams(E)
-% %
-%            
-% %     switch E
-% %         case 'Fe'
-% %         params = [1.4023 0.2375	0.525 1.975	63.95 0.175 0.15 0.77402 0.69922 0.83711 0.77988 0.80156	0.56016	0.81621	1.0838	0.95527	0.78984	0.91367	0.4209	0.84355	0.17969	0.91641	0.72793	0.85625	0.62637	1.9059	2.717	0.48047	0.43418	0.46074	0.21758	0.44863	0.46465	0.9459	0.80898	0.18828	0.54063	0.80195	0.21934	0.55781	0.93281	0.86836	2.6916	-0.069141	0.086914	0.98437	-0.2	0.40234	0.75879	0.42207]';
-% %         
-% %         case 'W'
-% % 
-% %         params = [2.901	0.50506	0.49353	2.7026	4.5924	0.67813	0.097952	0.74844	0.68984	0.80859	0.72676	0.79551	0.5457	0.76328	1.0918	0.9791	0.79453	0.91465	0.37148	0.82383	0.20371	0.85977	0.70195	0.87812	0.55664	1.8666	2.6859	0.52187	0.43652	0.48066	0.25215	0.49336	0.425	0.97564	0.86406	0.20293	0.52285	0.85605	0.25469	0.5375	0.89395	1.2201	4.2859	-0.10781	-0.039844	1.0451	-0.31738	0.40449	0.72324	0.60078]';
-% % 
-% %         otherwise
-% %         error('Undefined element');
-% %     end
-%     
-% end
 
 function en = Fatgb(eta, en1, en2, period, a)
 %
@@ -553,6 +535,9 @@ function I = Ifn(keppa, a, b, aOpen, bOpen)
     
 end
 
+%% section 3 %%
+% rsw and rsw piecewise functions 
+
 function frsw = rsw(theta, thetaMin, thetaMax, a)
 % This function computes the value of Read-Shockley-Wolf function at theta.
 % The rsw function is normalized to be 1.0 at thetaMax and 0.0 at thetaMin.
@@ -570,41 +555,18 @@ function frsw = rsw(theta, thetaMin, thetaMax, a)
     % For nummerical problem of sin of zero, the small value is assigned. 
     x(x<0.00001) = 0.00001;
     frsw = sin(pi/2.*x).*(1-a.*log(sin(pi/2.*x)));
+
+% % This frsw function computes the value of Read-Shockley-Wolf function at theta.
+% % The rsw function is normalized to be 1.0 at theta2 and 0.0 at theta1.
+% % theta             angle at which to compute the function
+% % thetaMin          the starting angle of the interval
+% % thetaMax          the end angle of the interval
+% % a                 parameter defining the shape of the RSW function
     
 end
 
-% function en = rsw(theta, theta1, theta2, a)
-% % en = rsw(theta,theta1,theta2,a)
-% %
-% % This function computes the value of Read-Shockley-Wolf function at theta.
-% % The rsw function is normalized to be 1.0 at theta2 and 0.0 at theta1.
-% % 
-% % theta             angle at which to compute the function
-% % theta1            the starting angle of the interval
-% % theta2            the end angle of the interval
-% % a                 parameter defining the shape of the RSW function
-% %
-% 
-%     dtheta = theta2 - theta1  ;     % Interval of angles where defined
-%     theta = (theta-theta1)./dtheta*pi/2 ;    % Normalized angle
-%     % The rest is the rsw function evaluation
-%     sins = sin(theta) ;
-%     xlogx = zeros(size(sins));
-% 
-%     % Cut off at small sins to avoid 0*infinity problem.  The proper limit is 0.
-%     select = sins >= 0.000001;
-%     xlogx(select) = sins(select).*log(sins(select));
-% 
-%     en = sins - a*xlogx;
-%     
-% end
-
-%
-%
-% BKR functions, calculating the Scaffolding Data for <100>, <110>, and <111>
-% sets, are duplicated from the publication version, {Ref}.
-%
-%
+%% section 4 %%
+% the function of scaffolding calculation
 
 function geom = distances_to_set(P,Q,whichaxes,dismax)
 % geom = distances_to_set(P,Q,whichaxes,dismax)
