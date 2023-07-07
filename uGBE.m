@@ -26,45 +26,45 @@
 % Written by Vasily Bulatov, bulatov1@llnl.gov; Bryan Reed, 
 % reed12@llnl.gov. CODE-LLNL-CODE-646028. 
 % All rights reserved. This file is part of GB5DOF. For details, 
-% see the Supplementary data section of the original article by V. V. Bulatov, 
+% see Supplementary data section of the original article by V. V. Bulatov, 
 % B. W. Reed and M. Kumar "Grain Boundary Energy Function for FCC Metals".
 
 %%
 function approx_en = uGBE(fnData, GBE_coh_twin, type)
-% fnData is an input data file that contains 18 columns of the orientations 
+% fnData is input data file that contain 18 columns of the orientations 
     % in the two grains (P and Q).
-% GBE_twin is coherent twin energy in the unit of J/m2.
+% GBE_twin is coherent twin energy in unit of J/m2.
 % type of alkali or transition-BCC metals ('transition', 'alkali').
 
-% The grain boundary energy function that approximates the energy from 5D
-% space boundaries in BCC metals. There are 4 sections in this code. 
+% The grain boundary energy function that approximate the energy from 5D
+% space bounaries in BCC metals. There are 4 sections in this code. 
 %
-% First section, the main section contains the code of full energy approximation 
-% that is based on the study of Bulatov.
+% First section, main section contains the code of full energy approximation 
+% that based on the study of Bulatov.
 % 
-% Second section, there are the functions for calculating energy in 1D, 2D,
+% Second section, there are the functions for calculate energy in 1D, 2D,
 % and 3D spaces for <100>, <110>, and <111> sets. 
 % 
 % Third section contains the code for calculating rsw 
-% and rsw piecewise functions based on the study of Dette. 
+% and rsw piecewise functions that based on the study of Dette. 
 % 
 % The last section is the function of scaffolding calculation 
 % obtained from the BRK function
 % V. V. Bulatov, B. W. Reed, M. Kumar, Acta Mater. 65 (2014) 161-175.
 % H. Dette, J. Goesmann, C. Greiff, R. Janisch, Acta Mater. 125 (2017) 145-153
 
-    % The only one input of this function is the Excel file, which defines 
+    % The only one input of this function is the excel file, which define 
     % the orientations of the two grains (P and Q) by a laboratory frame.
     % There are 18 columns for 3x3 matrix of P and Q cube frame. 
     %
-    % Example of the Excel input for sigma 23 (310) boundary in Fe is as follows:
+    % Example of the excel input for sigma 23 (310) boundary in Fe is as follows:
     %
     % |                  Matrix P                  |                  Matrix Q                  |
     % | x1 |    |    | y1 |    |    | z1 |    |    | x2 |    |    | y2 |    |    | z2 |    |    |
     % |  6 |  2 |  0 |  3 | -9 |  5 |  2 | -6 |-12 |  6 |  2 |  0 |	 3 | -9 | -5 | -2 |  6 |-12 |
     % 
     % coherent twin energy = 0.262260282 J/m2, and type = 'transition'
-    % This particular Excel file passes into UGBE(). Function returns
+    % This particular excel file pass into UGBE(). Function returns
     %% 1.2920 %% as an energy value of sigma 23 (310) boundary in unit of J/m2.
     %%
     labFrame = readmatrix(fnData);
@@ -132,6 +132,10 @@ end
 
 function en = weight_all_set(geom100, geom110, geom111, params)
 %
+
+    %eRGB = params(1); % The only dimensioned parameter.  The energy scale, set by the energy of a random boundary.
+                        % However, this parameter are significate use in the
+                        % universal function for BCC metels in future work.
     d0100 = params(1); % Maximum distance for the 100 set.  Also the distance scale for the rsw weighting function.
     d0110 = params(2); % Same for the 110 set
     d0111 = params(3); % Same for the 111 set
@@ -139,7 +143,7 @@ function en = weight_all_set(geom100, geom110, geom111, params)
     weight110 = params(5); % Same for 110
     weight111 = params(6); % Same for 111
 
-    % The following three energy lists are in range of 0-1. 
+    % The following three energy lists are in units of eRGB. 
     ksiData = geom100(2,:);
     etaData = geom100(3,:);
     phiData = geom100(4,:);
@@ -184,7 +188,7 @@ function en = weight_all_set(geom100, geom110, geom111, params)
 end
 
 %% section 2 %%
-% calculate boundary energy for <100> set
+% calculate boudnary energy for <100> set
 
 function en = enMix100(ksi, eta, phi, params)
 %
